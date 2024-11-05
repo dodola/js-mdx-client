@@ -6,7 +6,12 @@ div(class="container")
     style="display: block; width: 360px; margin: auto;"
     @search="onSearch"
   )
-  a-tabs(:activeKey="activeKey" @update:activeKey="updateActiveKey" :animated="false" centered)
+  a-tabs(
+    :activeKey="activeKey"
+    @update:activeKey="updateActiveKey"
+    :animated="false"
+    centered
+  )
     a-tab-pane(v-for="item of dataSource" :key="item.title" :forceRender="true")
       template(#tab)
         a-tooltip(color="#1677ff")
@@ -106,13 +111,31 @@ onMounted(async () => {
 .container {
   padding: 4px;
   width: 375px;
+  height: 100%;
+
   box-sizing: border-box;
   background-color: rgb(250, 250, 250);
+
+  display: flex;
+  flex-direction: column;
+}
+:deep(.ant-tabs) {
+  flex: 1;
+}
+:deep(.ant-tabs-content-holder) {
+  flex: 1;
+}
+:deep(.ant-tabs-content) {
+  height: 100%;
+}
+:deep(.ant-tabs-tabpane) {
+  display: flex;
+  flex: 1;
 }
 
 iframe {
   width: 100%;
-  height: max(calc(100vh - 116px), 675px);
+  height: 100%;
   border: 0;
 }
 </style>
