@@ -6,8 +6,8 @@ div(class="container")
     style="display: block; width: 360px; margin: auto;"
     @search="onSearch"
   )
-  a-tabs(:activeKey="activeKey" @update:activeKey="updateActiveKey" centered)
-    a-tab-pane(v-for="item of dataSource" :key="item.title")
+  a-tabs(:activeKey="activeKey" @update:activeKey="updateActiveKey" :animated="false" centered)
+    a-tab-pane(v-for="item of dataSource" :key="item.title" :forceRender="true")
       template(#tab)
         a-tooltip(color="#1677ff")
           QuestionCircleOutlined
@@ -23,18 +23,17 @@ div(class="container")
 import { QuestionCircleOutlined } from "@ant-design/icons-vue";
 import { onMounted, ref } from "vue";
 
-const QueryKey = "q";
 const DefaultWord = "welcome";
 
 // ex: http://127.0.0.1:3000/?q=welcome
-const genUrl = (prefix: string) => `${prefix}/?${QueryKey}=${search.value}`;
+const genUrl = (prefix: string) => `${prefix}/${search.value}`;
 
 const search = ref<string>();
 
 const onSearch = () => {
   if (!search.value) search.value = DefaultWord;
   dataSource.value.forEach((it) => (it.url = genUrl(it.prefix)));
-  history.pushState(null, "", `?${QueryKey}=${search.value}`);
+  history.pushState(null, "", `${search.value}`);
 };
 
 const activeKey = ref<string>();
@@ -76,13 +75,12 @@ type IMdxHeader = {
 };
 
 onMounted(async () => {
-  const url = new URL(location.href);
-  const query = url.searchParams.get(QueryKey);
+  const query = location.pathname.slice(1);
 
   if (query) search.value = query;
   else {
     search.value = DefaultWord;
-    history.replaceState(null, "", `?${QueryKey}=${DefaultWord}`);
+    history.replaceState(null, "", `${DefaultWord}`);
   }
 
   const resp = await fetch("/api/info", { method: "POST" });
