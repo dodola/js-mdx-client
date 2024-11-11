@@ -3,25 +3,26 @@ div(class="container")
   a-input-search(
     v-model:value="search"
     placeholder="请输入查询单词"
-    style="display: block; width: 360px; margin: auto;"
+    style="display: block; width: 352px; margin: auto;"
     @search="onSearch"
   )
   a-tabs(
     :activeKey="activeKey"
     @update:activeKey="updateActiveKey"
     :animated="false"
+    size="small"
     centered
   )
     a-tab-pane(v-for="item of dataSource" :key="item.title" :forceRender="true")
       template(#tab)
         a-tooltip(color="#1677ff")
-          QuestionCircleOutlined
+          QuestionCircleOutlined(style="font-size: 12px;")
           template(#title)
             div(style="max-height: 480px; overflow: auto;")
               h4 {{ item.mdxHeader.Title }}
               div(v-html="item.mdxHeader.Description")
-        span {{ item.title }}
-      iframe(:src="item.url")
+        span(style="user-select: none;" :title="item.title") {{ item.title }}
+      iframe(:src="item.url" frameborder="0")
 </template>
 
 <script setup lang="ts">
@@ -46,10 +47,6 @@ const updateActiveKey = (val: string) => {
   activeKey.value = val;
   localStorage.setItem("activeKey", val || "");
 };
-
-function fmtHostname(hostname: string) {
-  return hostname.replace("0.0.0.0", "127.0.0.1");
-}
 
 const dataSource = ref<
   {
@@ -91,7 +88,7 @@ onMounted(async () => {
   const resp = await fetch("/api/info", { method: "POST" });
   const { data } = await resp.json();
   dataSource.value = data.map((it: any) => {
-    const prefix = "http://" + fmtHostname(it.hostname) + ":" + it.port;
+    const prefix = "http://" + it.hostname + ":" + it.port;
     const url = genUrl(prefix);
 
     const title = it.mdxDir.slice(it.mdxDir.lastIndexOf("/") + 1);
@@ -107,33 +104,54 @@ onMounted(async () => {
 });
 </script>
 
+<style lang="scss">
+.ant-tabs {
+  flex: 1;
+}
+.ant-tabs-nav {
+  margin-bottom: 0;
+}
+.anticon {
+  margin-right: 4px !important;
+}
+
+.ant-tabs-tab {
+  max-width: 50%;
+  overflow: hidden;
+
+  .ant-tabs-tab-btn {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+.ant-tabs-content-holder {
+  flex: 1;
+}
+.ant-tabs-content {
+  height: 100%;
+}
+.ant-tabs-tabpane {
+  display: flex;
+  flex: 1;
+}
+</style>
+
 <style scoped lang="scss">
 .container {
-  padding: 4px;
-  width: 375px;
+  padding: 8px 4px;
   height: 100%;
 
   box-sizing: border-box;
-  background-color: rgb(250, 250, 250);
+  background-color: rgb(253, 253, 253);
 
   display: flex;
   flex-direction: column;
 }
-:deep(.ant-tabs) {
-  flex: 1;
-}
-:deep(.ant-tabs-content-holder) {
-  flex: 1;
-}
-:deep(.ant-tabs-content) {
-  height: 100%;
-}
-:deep(.ant-tabs-tabpane) {
-  display: flex;
-  flex: 1;
-}
 
 iframe {
+  display: block;
   width: 100%;
   height: 100%;
   border: 0;
