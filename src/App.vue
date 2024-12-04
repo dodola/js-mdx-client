@@ -2,16 +2,16 @@
 div(class="container")
   a-input-search(
     v-model:value="search"
-    placeholder="请输入查询单词"
-    style="display: block; width: 352px; margin: auto;"
+    placeholder="请输入单词"
+    style="display: block; width: 352px; margin: 0 auto;"
     @search="onSearch"
   )
   a-tabs(
     :activeKey="activeKey"
     @update:activeKey="updateActiveKey"
     :animated="false"
+    :centered="dataSource.length<3"
     size="small"
-    centered
   )
     a-tab-pane(v-for="item of dataSource" :key="item.title" :forceRender="true")
       template(#tab)
@@ -77,10 +77,12 @@ type IMdxHeader = {
 };
 
 onMounted(async () => {
+  // http://localhost:5173/{word}
   const query = location.pathname.slice(1);
 
-  if (query) search.value = query;
-  else {
+  if (query) {
+    search.value = query;
+  } else {
     search.value = DefaultWord;
     history.replaceState(null, "", `${DefaultWord}`);
   }
@@ -116,7 +118,7 @@ onMounted(async () => {
 }
 
 .ant-tabs-tab {
-  max-width: 50%;
+  max-width: 100px;
   overflow: hidden;
 
   .ant-tabs-tab-btn {
