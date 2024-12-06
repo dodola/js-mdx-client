@@ -1,14 +1,23 @@
 <template lang="pug">
 div(class="container")
-  a-input-search(
-    v-model:value="search"
-    placeholder="请输入单词"
-    style="display: block; width: 352px; margin: 0 auto;"
-    @search="onSearch"
-  )
+  div(style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 352px; margin: 0 auto;")
+    a-tooltip
+      template(#title)
+        div 快捷操作： 
+        ol(style="margin: 0; padding-inline-start: 20px;")
+          li 后退: <LeftOutlined /> 或 <ArrowLeftOutlined />
+          li 前进: <RightOutlined /> 或 <ArrowRightOutlined />
+          li 查词: 双击单词
+      QuestionCircleOutlined(style="color: #1677ff;")
+    a-input-search(
+      v-model:value="search"
+      placeholder="请输入单词"
+      style="display: block; width: 352px; margin: 0 auto;"
+      @search="onSearch"
+    )
   a-tabs(
-    :activeKey="activeKey"
-    @update:activeKey="updateActiveKey"
+    :activeKey="currMdx"
+    @update:activeKey="selectMdx"
     :animated="false"
     :centered="dataSource.length<3"
     size="small"
@@ -22,30 +31,41 @@ div(class="container")
               h4 {{ item.mdxHeader.Title }}
               div(v-html="item.mdxHeader.Description")
         span(style="user-select: none;" :title="item.title") {{ item.title }}
-      iframe(:src="item.url" frameborder="0")
+      iframe(:src="item.url" :title="item.title" frameborder="0")
 </template>
 
 <script setup lang="ts">
-import { QuestionCircleOutlined } from "@ant-design/icons-vue";
+import {
+  QuestionCircleOutlined,
+  LeftOutlined,
+  RightOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+} from "@ant-design/icons-vue";
 import { onMounted, ref } from "vue";
-
-const DefaultWord = "welcome";
-
-// ex: http://127.0.0.1:3000/?q=welcome
-const genUrl = (prefix: string) => `${prefix}/${search.value}`;
+import { addRecord, jump } from "./mockHistory";
 
 const search = ref<string>();
 
+// ex: http://127.0.0.1:3000/welcome
+const genUrl = (prefix: string) => `${prefix}/${search.value}`;
+
 const onSearch = () => {
-  if (!search.value) search.value = DefaultWord;
+  if (!search.value) return;
+
+  // 更新iframe链接
   dataSource.value.forEach((it) => (it.url = genUrl(it.prefix)));
-  history.pushState(null, "", `${search.value}`);
+  history.replaceState(null, "", `${search.value}`);
+  addRecord(search.value);
 };
 
-const activeKey = ref<string>();
-const updateActiveKey = (val: string) => {
-  activeKey.value = val;
-  localStorage.setItem("activeKey", val || "");
+// 表示当前选中的mdx
+const currMdx = ref<string>();
+
+// 点击tab，选中新的mdx
+const selectMdx = (val: string) => {
+  currMdx.value = val;
+  localStorage.setItem("currMdx", val || "");
 };
 
 const dataSource = ref<
@@ -76,6 +96,8 @@ type IMdxHeader = {
   StyleSheet: string; //"";
 };
 
+const DefaultWord = "welcome";
+
 onMounted(async () => {
   // http://localhost:5173/{word}
   const query = location.pathname.slice(1);
@@ -87,6 +109,8 @@ onMounted(async () => {
     history.replaceState(null, "", `${DefaultWord}`);
   }
 
+  addRecord(search.value);
+
   const resp = await fetch("/api/info", { method: "POST" });
   const { data } = await resp.json();
   dataSource.value = data.map((it: any) => {
@@ -96,14 +120,66 @@ onMounted(async () => {
     const title = it.mdxDir.slice(it.mdxDir.lastIndexOf("/") + 1);
     return { prefix, url, title, mdxHeader: it.mdxHeader as IMdxHeader };
   });
-  const prevKey = localStorage.getItem("activeKey");
+
+  const prevMdx = localStorage.getItem("currMdx");
   if (dataSource.value.length) {
     const titles = dataSource.value.map((it) => it.title);
-    if (!prevKey) activeKey.value = titles[0];
-    else if (titles.includes(prevKey)) activeKey.value = prevKey;
-    else activeKey.value = titles[0];
+    if (!prevMdx) currMdx.value = titles[0];
+    else if (titles.includes(prevMdx)) currMdx.value = prevMdx;
+    else currMdx.value = titles[0];
   }
 });
+
+function mockJump(dir: 1 | -1 | undefined) {
+  if (dir === undefined) return;
+
+  const word = jump(dir);
+  if (!word) return;
+
+  search.value = word;
+  // 更新iframe链接
+  dataSource.value.forEach((it) => (it.url = genUrl(it.prefix)));
+  history.replaceState(null, "", `${search.value}`);
+}
+
+const left = [",", "<", "，", "《", "ArrowLeft"];
+const right = [".", ">", "。", "》", "ArrowRight"];
+
+document.addEventListener("keyup", (e) => {
+  // 存在输入时，不响应跳转逻辑
+  if (document.activeElement?.tagName === "INPUT") return;
+
+  let dir: 1 | -1 | undefined = undefined;
+
+  if (left.includes(e.key)) dir = -1;
+  else if (right.includes(e.key)) dir = 1;
+
+  mockJump(dir);
+});
+
+window.addEventListener(
+  "message",
+  ({
+    data,
+  }: MessageEvent<{
+    jump?: -1 | 1;
+    select?: string;
+  }>) => {
+    // 前后跳转
+    if ("jump" in data) {
+      const dir = data.jump;
+      mockJump(dir);
+    }
+    // 选中跳转
+    else if ("select" in data) {
+      if (!data.select) return;
+      if (search.value === data.select) return;
+
+      search.value = data.select;
+      onSearch();
+    }
+  }
+);
 </script>
 
 <style lang="scss">
@@ -118,7 +194,7 @@ onMounted(async () => {
 }
 
 .ant-tabs-tab {
-  max-width: 100px;
+  max-width: 120px;
   overflow: hidden;
 
   .ant-tabs-tab-btn {
