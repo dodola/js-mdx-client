@@ -1,7 +1,7 @@
 <template lang="pug">
 div(class="container")
   div(style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 352px; margin: 0 auto;")
-    a-tooltip
+    a-tooltip(placement="topLeft")
       template(#title)
         div 快捷操作： 
         ol(style="margin: 0; padding-inline-start: 20px;")
