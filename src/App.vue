@@ -117,8 +117,7 @@ onMounted(async () => {
     const prefix = "http://" + it.hostname + ":" + it.port;
     const url = genUrl(prefix);
 
-    const title = it.mdxDir.slice(it.mdxDir.lastIndexOf("/") + 1);
-    return { prefix, url, title, mdxHeader: it.mdxHeader as IMdxHeader };
+    return { prefix, url, title: it.title, mdxHeader: it.mdxHeader as IMdxHeader };
   });
 
   const prevMdx = localStorage.getItem("currMdx");
@@ -130,7 +129,7 @@ onMounted(async () => {
   }
 });
 
-function mockJump(dir: 1 | -1 | undefined) {
+function mockJump(dir: 1 | -1) {
   if (dir === undefined) return;
 
   const word = jump(dir);
@@ -154,6 +153,10 @@ document.addEventListener("keyup", (e) => {
   if (left.includes(e.key)) dir = -1;
   else if (right.includes(e.key)) dir = 1;
 
+  if (dir === undefined) return;
+
+  e.preventDefault();
+  e.stopPropagation();
   mockJump(dir);
 });
 
@@ -168,6 +171,8 @@ window.addEventListener(
     // 前后跳转
     if ("jump" in data) {
       const dir = data.jump;
+      if (dir === undefined) return;
+
       mockJump(dir);
     }
     // 选中跳转
