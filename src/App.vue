@@ -114,7 +114,7 @@ onMounted(async () => {
   const resp = await fetch("/api/info", { method: "POST" });
   const { data } = await resp.json();
   dataSource.value = data.map((it: any) => {
-    const prefix = "http://" + it.hostname + ":" + it.port;
+    const prefix = "http://" + location.hostname + ":" + it.port;
     const url = genUrl(prefix);
 
     return { prefix, url, title: it.title, mdxHeader: it.mdxHeader as IMdxHeader };
