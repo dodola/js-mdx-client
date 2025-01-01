@@ -31,7 +31,7 @@ div(class="container")
               h4 {{ item.mdxHeader.Title }}
               div(v-html="item.mdxHeader.Description")
         span(style="user-select: none;" :title="item.title") {{ item.title }}
-      iframe(:src="item.url" :title="item.title" frameborder="0")
+      iframe(:src="item.url" loading="lazy" :title="item.title" frameborder="0")
 </template>
 
 <script setup lang="ts">
