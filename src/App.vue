@@ -1,37 +1,40 @@
 <template lang="pug">
-div(class="container")
-  div(style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 352px; margin: 0 auto;")
-    a-tooltip(placement="topLeft")
+div(class="app-container")
+  div(class="search-container")
+    a-tooltip(placement="topLeft" class="help-tooltip")
       template(#title)
-        div 快捷操作： 
-        ol(style="margin: 0; padding-inline-start: 20px;")
-          li 后退: <LeftOutlined /> 或 <ArrowLeftOutlined />
-          li 前进: <RightOutlined /> 或 <ArrowRightOutlined />
-          li 查词: 双击单词
-      QuestionCircleOutlined(style="color: #1677ff;")
+        div(class="help-content") 
+          h4 快捷操作：
+          ol
+            li 后退: <LeftOutlined /> 或 <ArrowLeftOutlined />
+            li 前进: <RightOutlined /> 或 <ArrowRightOutlined />
+            li 查词: 双击单词
+      QuestionCircleOutlined
     a-input-search(
       v-model:value="search"
       placeholder="请输入单词"
-      style="display: block; width: 352px; margin: 0 auto;"
+      class="search-input"
       @search="onSearch"
+      size="large"
     )
   a-tabs(
     :activeKey="currMdx"
     @update:activeKey="selectMdx"
-    :animated="false"
+    :animated="{ inkBar: true, tabPane: false }"
     :centered="dataSource.length<3"
-    size="small"
+    class="content-tabs"
   )
     a-tab-pane(v-for="item of dataSource" :key="item.title" :forceRender="true")
       template(#tab)
-        a-tooltip(color="#1677ff")
-          QuestionCircleOutlined(style="font-size: 12px;")
-          template(#title)
-            div(style="max-height: 480px; overflow: auto;")
-              h4 {{ item.mdxHeader.Title }}
-              div(v-html="item.mdxHeader.Description")
-        span(style="user-select: none;" :title="item.title") {{ item.title }}
-      iframe(:src="item.url" loading="lazy" :title="item.title" frameborder="0")
+        div(class="tab-item")
+          a-tooltip(color="#1677ff")
+            QuestionCircleOutlined(class="info-icon")
+            template(#title)
+              div(class="mdx-info")
+                h4 {{ item.mdxHeader.Title }}
+                div(v-html="item.mdxHeader.Description")
+          span(class="tab-title" :title="item.title") {{ item.title }}
+      iframe(:src="item.url" loading="lazy" :title="item.title" frameborder="0" class="content-frame")
 </template>
 
 <script setup lang="ts">
@@ -188,50 +191,329 @@ window.addEventListener(
 </script>
 
 <style lang="scss">
-.ant-tabs {
-  flex: 1;
-}
-.ant-tabs-nav {
-  margin-bottom: 0;
-}
-.anticon {
-  margin-right: 4px !important;
-}
+// 添加响应式断点变量
+$screen-xs: 480px;
+$screen-sm: 576px;
+$screen-md: 768px;
+$screen-lg: 992px;
+$screen-xl: 1200px;
 
-.ant-tabs-tab {
-  max-width: 120px;
-  overflow: hidden;
-
-  .ant-tabs-tab-btn {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+.app-container {
+  max-width: $screen-xl;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #ffffff;
+  box-sizing: border-box;
+  
+  @media (max-width: $screen-md) {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  @media (max-width: $screen-sm) {
+    padding: 8px;
+    gap: 12px;
   }
 }
 
-.ant-tabs-content-holder {
-  flex: 1;
-}
-.ant-tabs-content {
-  height: 100%;
-}
-.ant-tabs-tabpane {
+.search-container {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  
+  @media (max-width: $screen-sm) {
+    max-width: 100%;
+    gap: 8px;
+  }
+}
+
+.help-tooltip {
+  position: absolute;
+  left: -32px;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  @media (max-width: $screen-sm) {
+    position: static;
+    transform: none;
+  }
+  
+  .anticon {
+    color: #1677ff;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      color: #4096ff;
+      transform: scale(1.1);
+    }
+    
+    @media (max-width: $screen-sm) {
+      font-size: 14px;
+    }
+  }
+}
+
+.help-content {
+  h4 {
+    margin: 0 0 8px;
+    color: #ffffff;
+    
+    @media (max-width: $screen-sm) {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+  }
+  
+  ol {
+    margin: 0;
+    padding-inline-start: 20px;
+    color: #ffffff;
+    
+    @media (max-width: $screen-sm) {
+      font-size: 12px;
+      padding-inline-start: 16px;
+    }
+  }
+}
+
+.search-input {
+  width: 100%;
+  
+  .ant-input {
+    border-radius: 8px;
+    
+    &:hover, &:focus {
+      border-color: #4096ff;
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+    }
+    
+    @media (max-width: $screen-sm) {
+      font-size: 14px;
+      height: 32px;
+    }
+  }
+  
+  .ant-input-search-button {
+    border-radius: 0 8px 8px 0;
+    height: 40px;
+    
+    @media (max-width: $screen-sm) {
+      height: 32px;
+    }
+  }
+}
+
+.content-tabs {
   flex: 1;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  
+  @media (max-width: $screen-md) {
+    padding: 12px;
+  }
+  
+  @media (max-width: $screen-sm) {
+    padding: 8px;
+    border-radius: 4px;
+  }
+  
+  .ant-tabs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .ant-tabs-content-holder {
+    flex: 1;
+    min-height: 0;
+  }
+  
+  .ant-tabs-content {
+    height: 100%;
+  }
+  
+  .ant-tabs-tabpane {
+    height: 100%;
+  }
+  
+  .ant-tabs-nav {
+    margin-bottom: 16px;
+    
+    @media (max-width: $screen-sm) {
+      margin-bottom: 8px;
+    }
+    
+    &::before {
+      border-bottom-color: #f0f0f0;
+    }
+  }
+  
+  .ant-tabs-tab {
+    transition: all 0.3s ease;
+    padding: 8px 16px;
+    
+    @media (max-width: $screen-md) {
+      padding: 6px 12px;
+    }
+    
+    @media (max-width: $screen-sm) {
+      padding: 4px 8px;
+    }
+    
+    &:hover {
+      color: #1677ff;
+    }
+    
+    &.ant-tabs-tab-active {
+      .tab-title {
+        color: #1677ff;
+      }
+    }
+  }
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  
+  @media (max-width: $screen-sm) {
+    gap: 4px;
+    padding: 2px 0;
+  }
+}
+
+.info-icon {
+  font-size: 14px;
+  color: #8c8c8c;
+  transition: color 0.3s ease;
+  
+  @media (max-width: $screen-sm) {
+    font-size: 12px;
+  }
+  
+  &:hover {
+    color: #1677ff;
+  }
+}
+
+.tab-title {
+  user-select: none;
+  font-size: 14px;
+  color: #262626;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  @media (max-width: $screen-md) {
+    max-width: 100px;
+    font-size: 13px;
+  }
+  
+  @media (max-width: $screen-sm) {
+    max-width: 80px;
+    font-size: 12px;
+  }
+}
+
+.mdx-info {
+  max-height: 480px;
+  overflow: auto;
+  padding: 12px;
+  
+  @media (max-width: $screen-sm) {
+    max-height: 320px;
+    padding: 8px;
+  }
+  
+  h4 {
+    margin: 0 0 8px;
+    color: #ffffff;
+    
+    @media (max-width: $screen-sm) {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+  }
+}
+
+.content-frame {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  
+  @media (max-width: $screen-md) {
+    border-radius: 6px;
+  }
+  
+  @media (max-width: $screen-sm) {
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  }
+}
+
+// Override some Ant Design styles
+.ant-tooltip {
+  max-width: 400px;
+  
+  @media (max-width: $screen-md) {
+    max-width: 300px;
+  }
+  
+  @media (max-width: $screen-sm) {
+    max-width: 250px;
+  }
+}
+
+.anticon {
+  margin-right: 4px !important;
+  
+  @media (max-width: $screen-sm) {
+    margin-right: 2px !important;
+  }
+}
+</style>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
 }
 </style>
 
 <style scoped lang="scss">
-.container {
-  padding: 8px 4px;
-  height: 100%;
+// .container {
+//   padding: 8px 4px;
+//   height: 100%;
 
-  box-sizing: border-box;
-  background-color: rgb(253, 253, 253);
+//   box-sizing: border-box;
+//   background-color: rgb(253, 253, 253);
 
-  display: flex;
-  flex-direction: column;
-}
+//   display: flex;
+//   flex-direction: column;
+// }
 
 iframe {
   display: block;
