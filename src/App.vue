@@ -1,6 +1,6 @@
 <template lang="pug">
 div(class="app-container")
-  div(class="search-container")
+  div(class="search-container" ref="searchContainer")
     a-tooltip(placement="topLeft" class="help-tooltip")
       template(#title)
         div(class="help-content") 
@@ -19,7 +19,7 @@ div(class="app-container")
       size="large"
     )
     a-select-dropdown(
-      v-if="suggestions.length > 0"
+      v-if="suggestions.length > 0 && showDropdown"
       :visible="true"
       class="suggestion-dropdown"
     )
@@ -62,19 +62,23 @@ import { onMounted, ref } from "vue";
 import { addRecord, jump } from "./mockHistory";
 
 const search = ref<string>();
+const suggestions = ref<string[]>([]);
+const showDropdown = ref(false);
+const searchContainer = ref<HTMLElement | null>(null);
 
 // ex: http://127.0.0.1:3000/welcome
 const genUrl = (prefix: string) => `${prefix}/${search.value}`;
-const suggestions = ref<string[]>([]);
 
 const fetchSuggestions = async (query: string) => {
   try {
     const response = await fetch(`/api/wq?q=${encodeURIComponent(query)}`);
     const data = await response.json();
     suggestions.value = data.suggestions || [];
+    showDropdown.value = true;
   } catch (error) {
     console.error('Error fetching suggestions:', error);
     suggestions.value = [];
+    showDropdown.value = false;
   }
 };
 
@@ -84,12 +88,14 @@ const onInput = async (e: Event) => {
     await fetchSuggestions(value);
   } else {
     suggestions.value = [];
+    showDropdown.value = false;
   }
 };
 
 const selectSuggestion = (suggestion: string) => {
   search.value = suggestion;
   suggestions.value = [];
+  showDropdown.value = false;
   onSearch();
 };
 
@@ -170,6 +176,20 @@ onMounted(async () => {
     else if (titles.includes(prevMdx)) currMdx.value = prevMdx;
     else currMdx.value = titles[0];
   }
+
+  // Handle click outside
+  document.addEventListener('click', (e) => {
+    if (searchContainer.value && !searchContainer.value.contains(e.target as Node)) {
+      showDropdown.value = false;
+    }
+  });
+
+  // Handle Esc key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      showDropdown.value = false;
+    }
+  });
 });
 
 function mockJump(dir: 1 | -1) {
