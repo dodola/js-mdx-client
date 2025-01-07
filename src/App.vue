@@ -71,9 +71,9 @@ const genUrl = (prefix: string) => `${prefix}/${search.value}`;
 
 const fetchSuggestions = async (query: string) => {
   try {
-    const response = await fetch(`/api/wq?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`/api/yd-suggest?q=${encodeURIComponent(query)}`);
     const data = await response.json();
-    suggestions.value = data.suggestions || [];
+    suggestions.value = data.data.entries.map((entry: { entry: string; explain: string }) => entry.entry + " ( " entry.explain + " )") || [];
     showDropdown.value = true;
   } catch (error) {
     console.error('Error fetching suggestions:', error);
@@ -82,15 +82,22 @@ const fetchSuggestions = async (query: string) => {
   }
 };
 
-const onInput = async (e: Event) => {
-  const value = (e.target as HTMLInputElement).value;
-  if (value && value.length > 0) {
-    await fetchSuggestions(value);
-  } else {
-    suggestions.value = [];
-    showDropdown.value = false;
-  }
-};
+
+const onInput = (function () {
+  let timer: number | null = null;
+  return async function (e: Event) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const value = (e.target as HTMLInputElement).value;
+      if (value && value.length > 0) {
+        await fetchSuggestions(value);
+      } else {
+        suggestions.value = [];
+        showDropdown.value = false;
+      }
+    }, 300);
+  };
+})();
 
 const selectSuggestion = (suggestion: string) => {
   search.value = suggestion;
@@ -567,8 +574,8 @@ $screen-xl: 1200px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
-              0 3px 6px -4px rgba(0, 0, 0, 0.12),
-              0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
   margin-top: 4px;
   padding: 4px 0;
   opacity: 0;
@@ -580,6 +587,7 @@ $screen-xl: 1200px;
       opacity: 0;
       transform: translateY(-10px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
