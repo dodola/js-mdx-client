@@ -47,7 +47,9 @@ div(class="app-container")
                 h4 {{ item.mdxHeader.Title }}
                 div(v-html="item.mdxHeader.Description")
           span(class="tab-title" :title="item.title") {{ item.title }}
-      iframe(:src="item.url" loading="lazy" :title="item.title" frameborder="0" class="content-frame")
+          a-tooltip(title="刷新")
+            ReloadOutlined(class="refresh-icon" @click.stop="refreshTab(item)")
+      iframe(:src="item.url" loading="lazy" :title="item.title" frameborder="0" class="content-frame" @load="onIframeLoad($event, item)")
 </template>
 
 <script setup lang="ts">
@@ -57,6 +59,7 @@ import {
   RightOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons-vue";
 import { onMounted, ref } from "vue";
 import { addRecord, jump } from "./mockHistory";
@@ -109,13 +112,24 @@ const selectSuggestion = (suggestion: string) => {
 };
 
 const onSearch = () => {
-  showDropdown.value = false;
   if (!search.value) return;
-
-  // 更新iframe链接
-  dataSource.value.forEach((it) => (it.url = genUrl(it.prefix)));
-  history.replaceState(null, "", `${search.value}`);
+  history.pushState(null, "", `${search.value}`);
   addRecord(search.value);
+  showDropdown.value = false;
+
+  // Update URLs for all tabs
+  dataSource.value = dataSource.value.map(item => {
+    if (item.title === "有道词典") {
+      return {
+        ...item,
+        url: `https://dict.youdao.com/result?word=${search.value}&lang=en`
+      };
+    }
+    return {
+      ...item,
+      url: genUrl(item.prefix)
+    };
+  });
 };
 
 // 表示当前选中的mdx
@@ -172,12 +186,29 @@ onMounted(async () => {
 
   const resp = await fetch("/api/info", { method: "POST" });
   const { data } = await resp.json();
-  dataSource.value = data.map((it: any) => {
-    const prefix = "http://" + location.hostname + ":" + it.port;
-    const url = genUrl(prefix);
-
-    return { prefix, url, title: it.title, mdxHeader: it.mdxHeader as IMdxHeader };
-  });
+  dataSource.value = [
+    ...data.map((it: any) => {
+      const prefix = "http://" + location.hostname + ":" + it.port;
+      const url = genUrl(prefix);
+      return { prefix, url, title: it.title, mdxHeader: it.mdxHeader as IMdxHeader };
+    }),
+    {
+      prefix: "https://dict.youdao.com/result",
+      url: `https://dict.youdao.com/result?word=${search.value}&lang=en`,
+      title: "有道词典",
+      mdxHeader: {
+        Title: "有道词典",
+        Description: "在线词典查询",
+        GeneratedByEngineVersion: "",
+        RequiredEngineVersion: "",
+        Format: "Html",
+        KeyCaseSensitive: "No",
+        StripKey: "Yes",
+        Encrypted: "0",
+        RegisterBy: "",
+      }
+    }
+  ];
 
   const prevMdx = localStorage.getItem("currMdx");
   if (dataSource.value.length) {
@@ -258,6 +289,39 @@ window.addEventListener(
     }
   }
 );
+
+const refreshTab = (item: any) => {
+  const iframe = document.querySelector(`iframe[title="${item.title}"]`) as HTMLIFrameElement;
+  if (iframe) {
+    iframe.src = iframe.src;
+  }
+};
+
+function onIframeLoad(event: Event, item: any) {
+  if (item.title === "有道词典") {
+    console.log("=========== on iframe load ===========");
+    const iframe = event.target as HTMLIFrameElement;
+    try {
+      const iframeWindow = iframe.contentWindow as Window;
+      if (!iframeWindow || !iframeWindow.document) {
+        console.error("Cannot access iframe content");
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.textContent = `
+        const header = document.querySelector('.search_container');
+        if (header) {
+          header.style.display = 'none';
+        }
+      `;
+      iframeWindow.document.head.appendChild(script);
+    } catch (error) {
+      console.error("Failed to inject script into YouDao iframe:", error);
+    }
+  }
+  console.log("Iframe loaded:", event, item);
+}
 </script>
 
 <style lang="scss">
@@ -462,26 +526,21 @@ $screen-xl: 1200px;
 .tab-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 0;
-
-  @media (max-width: $screen-sm) {
-    gap: 4px;
-    padding: 2px 0;
-  }
-}
-
-.info-icon {
-  font-size: 14px;
-  color: #8c8c8c;
-  transition: color 0.3s ease;
-
-  @media (max-width: $screen-sm) {
-    font-size: 12px;
-  }
-
-  &:hover {
+  gap: 4px;
+  
+  .info-icon {
     color: #1677ff;
+    font-size: 14px;
+  }
+  
+  .refresh-icon {
+    color: #1677ff;
+    font-size: 14px;
+    cursor: pointer;
+    
+    &:hover {
+      color: #4096ff;
+    }
   }
 }
 
