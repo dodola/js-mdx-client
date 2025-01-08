@@ -187,12 +187,7 @@ onMounted(async () => {
   const resp = await fetch("/api/info", { method: "POST" });
   const { data } = await resp.json();
   dataSource.value = [
-    ...data.map((it: any) => {
-      const prefix = "http://" + location.hostname + ":" + it.port;
-      const url = genUrl(prefix);
-      return { prefix, url, title: it.title, mdxHeader: it.mdxHeader as IMdxHeader };
-    }),
-    {
+  {
       prefix: "https://dict.youdao.com/result",
       url: `https://dict.youdao.com/result?word=${search.value}&lang=en`,
       title: "有道词典",
@@ -207,7 +202,12 @@ onMounted(async () => {
         Encrypted: "0",
         RegisterBy: "",
       }
-    }
+    },
+    ...data.map((it: any) => {
+      const prefix = "http://" + location.hostname + ":" + it.port;
+      const url = genUrl(prefix);
+      return { prefix, url, title: it.title, mdxHeader: it.mdxHeader as IMdxHeader };
+    })
   ];
 
   const prevMdx = localStorage.getItem("currMdx");
