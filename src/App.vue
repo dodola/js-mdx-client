@@ -25,11 +25,11 @@ div(class="app-container")
     )
       a-select-item(
         v-for="suggestion in suggestions"
-        :key="suggestion"
-        @click="selectSuggestion(suggestion)"
+        :key="suggestion.entity"
+        @click="selectSuggestion(suggestion.entry)"
         class="suggestion-item"
         :class="{ 'selected': suggestion === search }"
-      ) {{ suggestion }}
+      ) {{ suggestion.entry +" ("+suggestion.explain+")" }}
   a-tabs(
     :activeKey="currMdx"
     @update:activeKey="selectMdx"
@@ -62,7 +62,7 @@ import { onMounted, ref } from "vue";
 import { addRecord, jump } from "./mockHistory";
 
 const search = ref<string>();
-const suggestions = ref<string[]>([]);
+const suggestions = ref<any[]>([]);
 const showDropdown = ref(false);
 const searchContainer = ref<HTMLElement | null>(null);
 
@@ -73,7 +73,8 @@ const fetchSuggestions = async (query: string) => {
   try {
     const response = await fetch(`/api/yd-suggest?q=${encodeURIComponent(query)}`);
     const data = await response.json();
-    suggestions.value = data.data.entries.map((entry: { entry: string; explain: string }) => entry.entry + " ( " entry.explain + " )") || [];
+    // data.entries.map(E=>E.entry+E.explain)
+    suggestions.value = data.data.entries || [];
     showDropdown.value = true;
   } catch (error) {
     console.error('Error fetching suggestions:', error);
@@ -88,7 +89,8 @@ const onInput = (function () {
   return async function (e: Event) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(async () => {
-      const value = (e.target as HTMLInputElement).value;
+      const value = (e.target as HTMLInputElement).value.trim();
+      
       if (value && value.length > 0) {
         await fetchSuggestions(value);
       } else {
@@ -100,13 +102,14 @@ const onInput = (function () {
 })();
 
 const selectSuggestion = (suggestion: string) => {
-  search.value = suggestion;
+  search.value = suggestion.trim();
   suggestions.value = [];
   showDropdown.value = false;
   onSearch();
 };
 
 const onSearch = () => {
+  showDropdown.value = false;
   if (!search.value) return;
 
   // 更新iframe链接
